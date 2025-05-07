@@ -1,2 +1,0 @@
-physics|Tal|1
-python|me|3
