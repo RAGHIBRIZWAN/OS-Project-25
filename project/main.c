@@ -373,13 +373,11 @@ void* issueBook(void* arg) {
     int book_found = 0;
 
     while (!user_found) {
-        getchar();
         printf("Enter the name of the user: ");
-        scanf("%s",data->uname);
-        //fgets(data->uname, sizeof(data->uname), stdin);
-        printf("breakpoint\n");
-        printf("%s\n",data->uname);
-        data->uname[strcspn(data->uname, "\n")] = '\0';
+        int ch;
+        while ((ch = getchar()) != '\n' && ch != EOF);
+        fgets(data->uname, sizeof(data->uname), stdin);
+        data->uname[strcspn(data->uname, "\n")] = '\0';  // Remove newline
         FILE *user_fp = fopen("data.txt", "r");
         if (!user_fp) {
             perror("Failed to open data.txt");
@@ -598,6 +596,7 @@ void* checkUserIssuedBooks(void* arg) {
     
 
     snprintf(path, sizeof(path), "user/%sIssueBook.txt", CurrentUser);
+    printf("Current User %s\n",CurrentUser);
 
     FILE *fp = fopen(path, "r");
     if (fp == NULL) {
@@ -607,7 +606,7 @@ void* checkUserIssuedBooks(void* arg) {
 
     issueData temp;
 
-    while (fscanf(fp, "%[^|]|%[^|]|%d\n", temp.name, temp.author, &temp.id) == 3) {
+    while (fscanf(fp, "%[^|]|%[^|]|%[^|]|%d\n", temp.uname, temp.name, temp.author, &temp.id) == 4) {
         has_books = 1;
         printf("Book Name: %s\nAuthor: %s\nID: %d\n\n", 
                temp.name, temp.author, temp.id);
@@ -620,6 +619,24 @@ void* checkUserIssuedBooks(void* arg) {
     }
 
     return NULL;
+}
+
+void* display(void* arg) {
+    FILE *fp = fopen("books.txt", "r");
+    if (fp == NULL) {
+        perror("Error opening books.txt");
+        return;
+    }
+
+    bookData temp;
+    printf("\n%-30s %-30s %-10s\n", "Book Name", "Author", "ID");
+    printf("--------------------------------------------------------------------------\n");
+
+    while (fscanf(fp, "%[^|]|%[^|]|%d\n", temp.name, temp.author, &temp.id) == 3) {
+        printf("%-30s %-30s %-10d\n", temp.name, temp.author, temp.id);
+    }
+
+    fclose(fp);
 }
 
 
@@ -768,7 +785,7 @@ void* userChat(void* arg) {
 }
 
 int main() {
-    pthread_t threads[12];
+    pthread_t threads[13];
     int code, choice;
     int check = 1;
 
@@ -785,7 +802,7 @@ int main() {
     }
 
     bookData data;
-    issueData issue;
+    issueData *issue = malloc(sizeof(issueData));;
     void* authResult;
 
     while (check) {
@@ -827,7 +844,7 @@ int main() {
                             pthread_join(threads[5], NULL);
                             break;
                         case 6:
-                            pthread_create(&threads[6], NULL, issueBook,NULL);
+                            pthread_create(&threads[6], NULL, issueBook,(void*)issue);
                             pthread_join(threads[6], NULL);
                             break;
                         case 7:
@@ -861,7 +878,7 @@ int main() {
                         int inMenu = 1;
                         while (inMenu) {
                             int choice3;
-                            printf("\nEnter any one:\n 1) Issue Book\n 2) Return Book\n 3) Chat\n 4) Exit\n Choice: ");
+                            printf("\nEnter any one:\n 1)view Issue Books\n 2) view Books\n 3) Chat\n 4) Exit\n Choice: ");
                             scanf("%d", &choice3);
 
                             switch (choice3) {
@@ -870,7 +887,7 @@ int main() {
                                     pthread_join(threads[12], NULL);
                                     break;
                                 case 2:
-                                    pthread_create(&threads[7], NULL, returnBook, NULL);
+                                    pthread_create(&threads[13], NULL, display, NULL);
                                     pthread_join(threads[7], NULL);
                                     break;
                                 case 3:
