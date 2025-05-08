@@ -73,7 +73,7 @@ void *authentication(void *arg)
 void *authenticate_user(void *arg)
 {
     char input_name[30], input_pass[30], input_id[10];
-    char file_name_chat[100], file_name_issue[100];
+
     FILE *file;
     int authenticated = 0;
 
@@ -128,30 +128,6 @@ void *authenticate_user(void *arg)
         if (authenticated)
         {
             printf("Authentication successful!\n");
-
-            struct stat st = {0};
-            if (stat("user", &st) == -1)
-            {
-                mkdir("user", 0700);
-            }
-
-            snprintf(file_name_chat, sizeof(file_name_chat), "user/%sChat.txt", input_name);
-            snprintf(file_name_issue, sizeof(file_name_issue), "user/%sIssueBook.txt", input_name);
-
-            if (access(file_name_chat, F_OK) == -1)
-            {
-                FILE *chat_file = fopen(file_name_chat, "w");
-                if (chat_file)
-                    fclose(chat_file);
-            }
-
-            if (access(file_name_issue, F_OK) == -1)
-            {
-                FILE *issue_file = fopen(file_name_issue, "w");
-                if (issue_file)
-                    fclose(issue_file);
-            }
-
             break;
         }
         else
@@ -717,10 +693,13 @@ void *BookIssuedDetail(void *arg)
     int has_issued_books = 0;
 
     while (fscanf(fp, "%[^|]|%[^|]|%[^|]|%d\n", temp.uname, temp.name, temp.author, &temp.id) == 4)
-    {
+    {   if(!has_issued_books){
+        // printf("%-30s %-30s %-10d\n", temp.name, temp.author, temp.id);
+            printf("\n%-20s %-20s %-20s %-10s\n","User Name", "Book Name", "Author", "ID");
+            printf("-----------------------------------------------------------------------\n");
+        }
         has_issued_books = 1;
-        printf("User Name: %s\nBook Name: %s\nAuthor: %s\nID: %d\n\n",
-               temp.uname, temp.name, temp.author, temp.id);
+        printf("%-20s %-20s %-20s %-10d\n",temp.uname, temp.name, temp.author, temp.id);
     }
 
     fclose(fp);
@@ -736,6 +715,7 @@ void *BookIssuedDetail(void *arg)
 void *Add_User(void *arg)
 {
     Student newUser;
+    char file_name_chat[100], file_name_issue[100];
 
     printf("Enter user name: ");
     getchar(); // clear buffer
@@ -760,13 +740,37 @@ void *Add_User(void *arg)
     fprintf(fp, "%s|%s|%s\n", newUser.name, newUser.password, newUser.id);
     fclose(fp);
 
+    struct stat st = {0};
+    if (stat("user", &st) == -1)
+    {
+        mkdir("user", 0700);
+    }
+
+    snprintf(file_name_chat, sizeof(file_name_chat), "user/%sChat.txt", newUser.name);
+    snprintf(file_name_issue, sizeof(file_name_issue), "user/%sIssueBook.txt", newUser.name);
+
+    if (access(file_name_chat, F_OK) == -1)
+    {
+        FILE *chat_file = fopen(file_name_chat, "w");
+        if (chat_file)
+            fclose(chat_file);
+    }
+
+    if (access(file_name_issue, F_OK) == -1)
+    {
+        FILE *issue_file = fopen(file_name_issue, "w");
+        if (issue_file)
+            fclose(issue_file);
+    }
+
     printf("✅ User added successfully.\n");
 
     return NULL;
 }
 
+
 void* display(void* arg) {
-    FILE *fp = fopen("books.txt", "r");
+    FILE *fp = fopen(BookFilePath, "r");
     if (fp == NULL) {
         perror("Error opening books.txt");
         return NULL;
